@@ -1,0 +1,68 @@
+name: FrameUp's shared docker build and push workflow
+
+on:
+  workflow_call:
+    inputs:
+      registry:
+        required: false
+        type: string
+        description: "Registry where should login and store new produced image. eg: ghcr.io"
+        default: ghcr.io
+      image-name:
+        required: true
+        type: string
+        description: "Image that the image should receive, generally, repository/project. eg: team-one-pos-tech/snack-hub"
+      image-tag:
+        required: false
+        type: string
+        description: "Tag to be set at new generated image. Default: latest"
+        default: latest
+      docker-base-image:
+        type: string
+        description: base image that wiil be use to create the docker container.
+        default: mcr.microsoft.com/dotnet/aspnet:8.0
+      
+      api-entrypoint-binary:
+        required: true
+        type: string
+        description: "Api project or runtime targer binary(eg: FrameUp.Api.dll)"
+
+jobs:
+  create-and-publish-image:
+    name: "Create and Publish Docker Image"
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download published artifacts from build stages 🚚
+        uses: actions/download-artifact@v4
+        with:
+          name: release-binaries
+          path: release/output
+
+      - name: Creating generic dockerfile 🐳
+        run: |
+          echo '
+          FROM ${{inputs.docker-base-image}} AS base
+          WORKDIR /app
+          EXPOSE 80
+          EXPOSE 443
+
+          FROM base AS final
+          WORKDIR /app/${{inputs.image-name}}
+          COPY /release/output /app/${{inputs.image-name}}/
+          ENTRYPOINT ["dotnet", "'${{inputs.api-entrypoint-binary}}'"]
+          ' > Dockerfile
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{inputs.registry}}
+          username: '${{github.actor}}'
+          password: '${{secrets.GITHUB_TOKEN}}'
+
+      - name: Build Image 📀
+        run: docker build -t ${{inputs.registry}}/${{inputs.image-name}}:${{inputs.image-tag}} -f Dockerfile .
+
+      - name: Push Image ☝️
+        run: docker push ${{inputs.registry}}/${{inputs.image-name}}:${{inputs.image-tag}}
+        

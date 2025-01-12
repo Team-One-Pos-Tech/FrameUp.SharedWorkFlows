@@ -1,0 +1,74 @@
+name: FrameUp's shared build and quality workflow
+
+on:
+  workflow_call:
+    inputs:
+      solution-name:
+        required: true
+        type: string
+        description: "Service solution's name(.sln file)!"
+      api-project-name:
+        required: true
+        type: string
+        description: "Api project or runtime target project(eg: FrameUp.Api.csproj)"
+      sonar-project-name:
+        required: false
+        type: string
+        description: "Project name configured at SonarCloud for the target project - By default it will use the repository name"
+        default: ${{ github.repository }}
+      sonar-project-key:
+        required: true
+        type: string
+        description: "Project key configured at SonarCloud for the target project"
+    
+    secrets:
+      sonar-token:
+        required: true
+        description: "Sonar secret token - should be at SONAR_TOKEN secret"
+
+jobs:
+  build:
+    name: "App Build & Artficacts Storage"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies ⇣
+        run: dotnet restore ${{inputs.solution-name}}
+
+      - name: Publishing ⚙
+        run: dotnet publish src/${{inputs.api-project-name}}/${{inputs.api-project-name}}.csproj -c Release -o release/output
+
+      - name: Archive publish artifacts 📦
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries
+          path: release/output
+  
+  tests-and-quality:
+    if: ${{ inputs.sonar-project-key != '' }}
+    name: "Tests & Sonar Qality Validation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: "Sonar Scan - Test execution"
+        uses: highbyte/sonarscan-dotnet@v2.3.3
+        env:
+          SONAR_TOKEN: ${{ secrets.sonar-token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          sonarProjectKey: ${{inputs.sonar-project-key}}
+          sonarProjectName: ${{ inputs.sonar-project-name }}
+          sonarOrganization: "team-one-pos-tech"
+          dotnetTestArguments: >-
+            ${{inputs.solution-name}} --logger trx --collect:"XPlat Code Coverage" --
+            DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          sonarBeginArguments: >-
+            /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml"
+            -d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx"
