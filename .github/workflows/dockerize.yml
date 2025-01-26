@@ -20,7 +20,7 @@ on:
       docker-base-image:
         type: string
         description: base image that wiil be use to create the docker container.
-        default: mcr.microsoft.com/dotnet/aspnet:8.0
+        default: mcr.microsoft.com/dotnet/aspnet:9.0
       
       api-entrypoint-binary:
         required: true
