@@ -1,0 +1,21 @@
+name: FrameUp's shared deployment workflow
+
+on:
+    workflow_call:
+      inputs:
+        cluster-address:
+          required: true
+          type: string
+        cluster-credentials:
+          required: true
+          type: string
+
+jobs:
+  deploy-service:
+    name: "Adds job placeholder until we have the infra, so we can take the decision on what strategy we are going"
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Placeholder step
+        run: |
+          echo Deploying!
