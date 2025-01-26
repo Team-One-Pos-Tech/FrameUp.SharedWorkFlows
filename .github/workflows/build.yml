@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
         
       - name: "Sonar Scan - Test execution"
-        uses: highbyte/sonarscan-dotnet@v2.3.3
+        uses: highbyte/sonarscan-dotnet@v2.4.1
         env:
           SONAR_TOKEN: ${{ secrets.sonar-token }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
