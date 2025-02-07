@@ -50,8 +50,8 @@ jobs:
           FROM base AS final
           WORKDIR /app/${{inputs.image-name}}
           COPY /release/output /app/${{inputs.image-name}}/
-          RUN chmod a+x ffmpeg &>/dev/null
-          RUN chmod a+x ffprobe &>/dev/null
+          RUN chmod a+x /app/${{inputs.image-name}}/ffmpeg
+          RUN chmod a+x /app/${{inputs.image-name}}/ffprobe
           ENTRYPOINT ["dotnet", "'${{inputs.api-entrypoint-binary}}'"]
           ' > Dockerfile
 
